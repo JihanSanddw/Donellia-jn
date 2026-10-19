@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import connection from "./config/database";
 import authRoutes from "./routes/authRoutes";
 import wishlistRoutes from "./routes/wishlistRoutes";
+import giftRoutes from "./routes/giftRoutes";
 
 const app: Express = express();
 
@@ -18,6 +19,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/wishlists", wishlistRoutes);
+app.use("/api/gifts", giftRoutes);
 
 // Endpoint database tetap dipertahankan di bawah ini.
 app.get("/api/health/db", async (req, res) => {
