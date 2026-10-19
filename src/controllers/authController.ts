@@ -1,9 +1,8 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
-
-import { uploadImage } from "../utils/cloudinaryUtil";
 import connection from "../config/database";
+import { uploadImage, deleteImage, getPublicIdFromUrl } from "../utils/cloudinaryUtil";
 
 // REGISTER
 export async function register(req: Request, res: Response) {
@@ -212,6 +211,96 @@ export async function getProfile(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       message: "Gagal mengambil profil",
+    });
+  }
+}
+
+// UPDATE AVATAR
+export async function updateAvatar(req: Request, res: Response) {
+  let newPublicId: string | null = null;
+
+  try {
+    const userId = (req as any).user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Foto profil wajib diunggah",
+      });
+    }
+
+    // Ambil foto profil lama.
+    const [rows] = await (await connection).query<any[]>(
+      "SELECT avatar_url FROM users WHERE id = ? LIMIT 1",
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Pengguna tidak ditemukan",
+      });
+    }
+
+    const oldAvatarUrl = rows[0].avatar_url;
+
+    // Upload foto baru ke Cloudinary.
+    const image = await uploadImage(req.file.buffer);
+    newPublicId = image.public_id;
+
+    try {
+      const [result] = await (await connection).query<any>(
+        "UPDATE users SET avatar_url = ? WHERE id = ?",
+        [image.secure_url, userId]
+      );
+
+      if (result.affectedRows === 0) {
+        throw new Error("Foto profil gagal disimpan ke database");
+      }
+    } catch (error) {
+      // Jika penyimpanan database gagal, hapus foto baru
+      // agar tidak meninggalkan file yang tidak terpakai.
+      if (newPublicId) {
+        try {
+          await deleteImage(newPublicId);
+        } catch (deleteError) {
+          console.error("Gagal membersihkan foto baru:", deleteError);
+        }
+      }
+
+      newPublicId = null;
+      throw error;
+    }
+
+    // Foto baru sudah tersimpan. Sekarang bersihkan foto lama.
+    const oldPublicId = oldAvatarUrl
+      ? getPublicIdFromUrl(oldAvatarUrl)
+      : null;
+
+    if (oldPublicId && oldPublicId !== newPublicId) {
+      try {
+        await deleteImage(oldPublicId);
+      } catch (error) {
+        // Kegagalan menghapus foto lama tidak membatalkan
+        // pembaruan profil yang sudah berhasil.
+        console.error("Gagal menghapus foto profil lama:", error);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Foto profil berhasil diperbarui",
+      user: {
+        id: userId,
+        avatar_url: image.secure_url,
+      },
+    });
+  } catch (error) {
+    console.error("Gagal memperbarui foto profil:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Gagal memperbarui foto profil",
     });
   }
 }
