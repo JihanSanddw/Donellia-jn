@@ -1,15 +1,23 @@
 import express, { type Express, type Request, type Response } from 'express';
-import connection from './config/database';
+import connection from "./config/database";
+import authRoutes from "./routes/authRoutes";
 
 const app: Express = express();
 
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).json ({
+// Middleware harus sebelum routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json({
     success: true,
-    message: 'Theres Denollia API!'
-  })
+    message: "Denollia API is running!",
+  });
 });
 
+app.use("/api/auth", authRoutes);
+
+// Endpoint database tetap dipertahankan di bawah ini.
 app.get("/api/health/db", async (req, res) => {
   try {
     const [rows] = await (await connection).query(
