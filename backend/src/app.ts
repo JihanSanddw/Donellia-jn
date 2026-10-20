@@ -4,8 +4,17 @@ import authRoutes from "./routes/authRoutes";
 import wishlistRoutes from "./routes/wishlistRoutes";
 import giftRoutes from "./routes/giftRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import cors from "cors";
 
 const app: Express = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // Middleware harus sebelum routes
 app.use(express.json());
