@@ -1,3 +1,22 @@
-node_modules/
-dist/
-.env
+# Backend - Express + TypeScript
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Frontend - Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/coverage/
+frontend/.env*
+!frontend/.env.example
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/.vercel/
+
+# Operating system
+.DS_Store
+Thumbs.db
